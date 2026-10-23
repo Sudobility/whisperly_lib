@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/whisperly_lib",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "description": "Frontend business logic library for Whisperly with Zustand stores and manager hooks",
   "type": "module",
   "main": "dist/index.js",
@@ -36,15 +36,16 @@
   "author": "Sudobility",
   "license": "BUSL-1.1",
   "peerDependencies": {
+    "@sudobility/types": "^1.9.74",
     "@tanstack/react-query": ">=5.0.0",
     "react": ">=18.0.0",
     "zustand": ">=5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "zustand": "^5.0.0",
-    "@sudobility/whisperly_client": "^1.0.57",
-    "@sudobility/whisperly_types": "^1.0.39",
+    "@sudobility/types": "^1.9.74",
+    "@sudobility/whisperly_client": "^1.0.59",
+    "@sudobility/whisperly_types": "^1.0.40",
     "@tanstack/react-query": "^5.90.5",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.1",
@@ -58,21 +59,19 @@
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.2.0",
     "firebase": "^11.0.0",
+    "globals": "^16.2.0",
     "jsdom": "^27.3.0",
     "prettier": "^3.6.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
-    "vitest": "^4.0.4"
+    "vitest": "^4.0.4",
+    "zustand": "^5.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/Sudobility/whisperly_lib.git"
-  },
-  "dependencies": {
-    "@sudobility/types": "^1.9.72"
   }
 }
