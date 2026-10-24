@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/whisperly_lib",
-  "version": "1.0.68",
+  "version": "1.0.69",
   "description": "Frontend business logic library for Whisperly with Zustand stores and manager hooks",
   "type": "module",
   "main": "dist/index.js",
@@ -44,8 +44,8 @@
   "devDependencies": {
     "@eslint/js": "~9.39.5",
     "@sudobility/types": "^1.9.76",
-    "@sudobility/whisperly_client": "^1.0.62",
-    "@sudobility/whisperly_types": "^1.0.43",
+    "@sudobility/whisperly_client": "^1.0.63",
+    "@sudobility/whisperly_types": "^1.0.44",
     "@tanstack/react-query": "~5.104.5",
     "@testing-library/dom": "~10.4.2",
     "@testing-library/react": "~16.3.3",
