@@ -7,7 +7,7 @@
       "devDependencies": {
         "@eslint/js": "~10.0.1",
         "@sudobility/types": "^1.9.76",
-        "@sudobility/whisperly_client": "^1.0.65",
+        "@sudobility/whisperly_client": "^1.0.66",
         "@sudobility/whisperly_types": "^1.0.44",
         "@tanstack/react-query": "~5.104.5",
         "@testing-library/dom": "~10.4.2",
@@ -292,7 +292,7 @@
 
     "@sudobility/types": ["@sudobility/types@1.9.76", "https://npm.pkg.github.com/download/@sudobility/types/1.9.76/71635156f72fd9461107d5f147b3dc1c49f863d0", {}, "sha512-b7maZHR5wM84VlQ+l9R+2guzSOrExog6OUNy1oCe7h0abW13syycmnLQL0g+qql0aQ84qTB4A0mJelhY3Vef4Q=="],
 
-    "@sudobility/whisperly_client": ["@sudobility/whisperly_client@1.0.65", "https://npm.pkg.github.com/download/@sudobility/whisperly_client/1.0.65/901287529f79e5526e86a8fd483a463b39093e54", { "peerDependencies": { "@sudobility/types": "^1.9.76", "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-+AQzY5vuWlpb7gg1xUxQPsa9rPnVs8vPnkxUXx5R8wPUF7/zSZCmdSLK8Dd/JhZS6MH8y+bVZsLYqTR0N+Ddrg=="],
+    "@sudobility/whisperly_client": ["@sudobility/whisperly_client@1.0.66", "https://npm.pkg.github.com/download/@sudobility/whisperly_client/1.0.66/844e83e887360145bfdcb0f86aaa6f2ba6b1820d", { "peerDependencies": { "@sudobility/types": "^1.9.76", "@tanstack/react-query": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-15WT61fYDru3q2j7U6ozJqeJMojVIXLENUrdplwbh2/PHz2YAPeZU6rxNjJbMMalq3flmstTWDyHcHoTpUPgxA=="],
 
     "@sudobility/whisperly_types": ["@sudobility/whisperly_types@1.0.44", "https://npm.pkg.github.com/download/@sudobility/whisperly_types/1.0.44/5158fe89a6286cb738a903ed7d559fd931a82008", { "peerDependencies": { "@sudobility/types": "^1.9.76" } }, "sha512-iWHTfFpHkFX0MRYqsxBNpQvLCDPzeZat82H679VuDGgqWbmrCNt2p9nb48DZpEUZbKifIltNnbKwFXCx2o9QKw=="],
 
