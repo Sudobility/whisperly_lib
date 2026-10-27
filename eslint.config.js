@@ -19,6 +19,8 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
     },
     rules: {
+      'preserve-caught-error': 'off',
+      'no-useless-assignment': 'off',
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': 'off',
       // Relax some strict TypeScript rules for dependency compatibility
