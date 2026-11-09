@@ -41,22 +41,36 @@ src/
 ├── hooks/
 │   ├── index.ts
 │   ├── useFirebaseAuth.ts            # Firebase auth state listener
-│   └── useWhisperlyClient.ts         # Client instantiation helper
+│   └── useWhisperlyClient.ts         # Client instantiation helper (NOT re-exported from src/index.ts)
 └── utils/
     ├── index.ts
     ├── resetAllStores.ts             # Reset all stores on logout
-    └── resetAllStores.test.ts
+    └── formatStoreError.ts           # Error -> message string (prefixes WhisperlyApiError with [status])
 ```
+
+Every `src/**/*.ts` with a sibling `.test.ts` is covered by Vitest (8 test files).
 
 ## Key Scripts
 
 ```bash
-bun run build        # Build TypeScript to dist/
+bun install          # Dependencies (node_modules is NOT checked in)
+bun run build        # tsc -p tsconfig.build.json + scripts/fix-esm-imports.mjs
 bun run build:watch  # Build in watch mode
-bun run typecheck    # TypeScript type checking
-bun run lint         # ESLint
-bun run test:run     # Run tests once
+bun run typecheck    # tsc --noEmit
+bun run lint         # ESLint over src (lint:fix to autofix)
+bun run test:run     # Run Vitest once (test:unit is an alias)
+bun run format       # Prettier write (format:check to verify)
 ```
+
+**Gotchas**
+- `build` is two steps: `tsc` emits extensionless relative imports (`moduleResolution:
+  "bundler"`), then `fix-esm-imports.mjs` rewrites them to `.js` so Node's ESM loader
+  resolves them. Don't drop the second step.
+- Vitest env: store/util tests run in `node`; hook/manager tests need a
+  `// @vitest-environment jsdom` directive at the top of the file.
+- Two ESLint config files exist (`eslint.config.js` and `eslint.config.mjs`). ESLint uses
+  `eslint.config.js`; `eslint.config.mjs` is stale/unused.
+- Published to GitHub Packages (`@sudobility` scope via `.npmrc`), not public npm.
 
 ## Architecture
 
@@ -68,76 +82,58 @@ Manager Hooks (whisperly_lib)  ←→  TanStack Query (whisperly_client hooks)
 Zustand Stores (whisperly_lib)
 ```
 
-### Data Flow
-1. Manager creates `WhisperlyClient` internally via `useMemo`
-2. Manager calls TanStack Query hooks from `whisperly_client`
-3. Query data syncs to Zustand store via `useEffect`
-4. Manager returns store state + mutation actions
-5. On logout, `resetAllStores()` clears all stores
+### Data Flow (every manager follows this)
+1. Create `WhisperlyClient` internally via `useMemo` (stable ref keyed on baseUrl/networkClient)
+2. Call TanStack Query hooks from `whisperly_client`
+3. Sync query → store via `useEffect`s (data, loading, error) using `formatStoreError`
+4. Wrap mutations in `useCallback`; combine `isLoading` from store + mutation pending states
+5. Return store state + mutation actions. On logout, `resetAllStores()` clears all stores.
 
 ## Manager Signatures
 
-All managers take a config object with `baseUrl` and `getIdToken` plus scope-specific fields.
-
-### Entity-Scoped Managers
-
-```typescript
-// Projects — requires entitySlug
-useProjectManager({ baseUrl, getIdToken, entitySlug, autoFetch? }): UseProjectManagerResult
-// Returns: projects, isLoading, error, createProject, updateProject, deleteProject,
-//          generateApiKey, deleteApiKey, refetch, isCreating, isUpdating, isDeleting
-
-// Single project detail — requires entitySlug + projectId
-useProjectDetail({ baseUrl, getIdToken, entitySlug, projectId }): UseProjectDetailResult
-// Returns: project, isLoading, error, refetch
-
-// Dictionary — requires entitySlug + projectId
-useDictionaryManager({ baseUrl, getIdToken, entitySlug, projectId }): UseDictionaryManagerResult
-// Returns: dictionaries, isLoading, error, createDictionary, updateDictionary,
-//          deleteDictionary, refetch, isCreating, isUpdating, isDeleting
-
-// Analytics — requires entitySlug + optional date filters
-useAnalyticsManager({ baseUrl, getIdToken, entitySlug, startDate?, endDate?, projectId? }): UseAnalyticsManagerResult
-// Returns: analytics, isLoading, error, refetch
-
-// Languages — requires entitySlug + projectId
-useLanguagesManager({ baseUrl, getIdToken, entitySlug, projectId }): UseLanguagesManagerResult
-// Returns: projectLanguages, availableLanguages, isLoading, updateLanguages
-```
-
-### User-Scoped Managers
+**Every manager config is `{ baseUrl: string, networkClient: NetworkClient, ...scopeFields }`.**
+`NetworkClient` comes from `@sudobility/types`; the consuming app builds it and is
+responsible for injecting auth (e.g. a Firebase ID token) into requests. There is **no
+`getIdToken` config field** — do not add one. `getIdToken` only exists as a *return value*
+of `useFirebaseAuth`.
 
 ```typescript
-// Settings — requires userId
-useSettingsManager({ baseUrl, getIdToken, userId }): UseSettingsManagerResult
-// Returns: settings, isLoading, error, updateSettings, isUpdating
-```
+// Entity-scoped
+useProjectManager({ baseUrl, networkClient, entitySlug, autoFetch? })
+//   -> projects, selectedProjectId, selectedProject, isLoading, error,
+//      createProject, updateProject, deleteProject, generateApiKey, deleteApiKey,
+//      selectProject, refetch, isCreating, isUpdating, isDeleting
+useProjectDetail({ baseUrl, networkClient, entitySlug, projectId })
+//   -> project, isLoading, error, refetch
+useDictionaryManager({ baseUrl, networkClient, entitySlug, projectId })
+//   -> dictionaries, selectedDictionaryId, selectedDictionary, isLoading, error,
+//      createDictionary, updateDictionary, deleteDictionary, selectDictionary,
+//      isCreating, isUpdating, isDeleting   (NOTE: no refetch)
+useAnalyticsManager({ baseUrl, networkClient, entitySlug, startDate?, endDate?, projectId?, enabled? })
+//   -> analytics, aggregate, byProject, byDate, dateRange, filterProjectId,
+//      isLoading, error, setDateRange, setFilterProjectId, refetch
+useLanguagesManager({ baseUrl, networkClient, entitySlug, projectId })
+//   -> projectLanguages (comma-separated string|null), availableLanguages,
+//      isLoading, error, updateLanguages, isUpdating, refetch
 
-### Public Managers
+// User-scoped
+useSettingsManager({ baseUrl, networkClient, userId })
+//   -> settings, organizationName, organizationPath, isLoading, error,
+//      updateSettings, refetch, isUpdating
 
-```typescript
-// Translation — no auth required
-useTranslationManager({ baseUrl, testMode? }): { translate, isTranslating }
-
+// Public (no auth)
+useTranslationManager({ baseUrl, networkClient, testMode? })
+//   -> translate, isTranslating, lastResponse, error, clearLastResponse
 // TranslateParams: { orgPath, projectName, request: TranslationRequest, apiKey? }
-const result = await translate({ orgPath: 'my-org', projectName: 'my-project', request: { strings: ['Hello'], target_languages: ['es'] } });
 ```
 
 ## Store Pattern
 
-All 4 stores follow the same Zustand pattern:
-
-```typescript
-interface StoreState {
-  data: DataType | null;
-  isLoading: boolean;
-  error: string | null;
-  setData: (data) => void;
-  setLoading: (isLoading) => void;
-  setError: (error) => void;
-  reset: () => void;
-}
-```
+All 4 stores are Zustand stores with `isLoading`, `error`, domain-specific state and
+setters, plus a `reset()`. Setters are domain-named (e.g. `setProjects`/`addProject`/
+`updateProject`/`removeProject`, `setAnalytics`, `setSettings`), **not** a generic `setData`.
+Each store exports internal `selectIsLoading`/`selectError` selectors that `stores/index.ts`
+re-exports under domain-prefixed aliases (e.g. `selectProjectIsLoading`).
 
 ### Exported Selectors
 
@@ -168,49 +164,36 @@ dictionaries: Record<string, DictionarySearchResponse[]>  // projectId → dicti
 const dictionaries = useDictionaryStore(selectDictionariesForProject('proj-123'));
 ```
 
-## Manager Pattern (How It Works)
-
-Each manager internally:
-1. Creates `WhisperlyClient` with `useMemo` (stable reference)
-2. Extracts store actions
-3. Calls TanStack Query hooks from `whisperly_client`
-4. Syncs query → store via 3 `useEffect`s (data, loading, error)
-5. Wraps mutations with `useCallback` for stability
-6. Combines `isLoading` from store + all mutation pending states
-
 ## Auth Hook
 
 ```typescript
-const { user, loading, getIdToken } = useFirebaseAuth();
+const { user, loading, getIdToken } = useFirebaseAuth(auth); // takes a Firebase Auth instance
 // user: Firebase User | null
 // getIdToken: () => Promise<string | undefined>
 ```
 
+`firebase` is a devDependency (used only by this hook), not a peer dependency — the consumer
+that calls `useFirebaseAuth` supplies the `Auth` instance and has `firebase` installed.
+
 ## Adding New Features
 
-### New Store
-1. Create `src/stores/newStore.ts` following existing pattern (state + actions + selectors)
-2. Export from `src/stores/index.ts`
-3. Add `useNewStore.getState().reset()` call in `src/utils/resetAllStores.ts`
-4. Write tests in `src/stores/newStore.test.ts`
-
-### New Manager
-1. Create `src/managers/useNewManager.ts`
-2. Define `Config` and `Result` interfaces
-3. Use `useMemo` for client creation, `useCallback` for actions
-4. Sync TanStack Query data to store via `useEffect`
-5. Export from `src/managers/index.ts` and `src/index.ts`
+- **New store**: follow the existing pattern (state + domain setters + selectors), export
+  from `stores/index.ts`, add `useNewStore.getState().reset()` to `utils/resetAllStores.ts`,
+  and add a `.test.ts`.
+- **New manager**: define `Config`/`Result` interfaces, use `useMemo` for the client +
+  `useCallback` for actions, sync query→store via `useEffect`, export from
+  `managers/index.ts` **and** `src/index.ts` (the root barrel is the public API).
 
 ## Dependencies
 
 - `@sudobility/whisperly_client` — API client and hooks
 - `@sudobility/whisperly_types` — shared types (re-exported for convenience)
-- Peer: `react`, `@tanstack/react-query`, `zustand`, `firebase`
+- Peer deps: `@sudobility/types`, `@tanstack/react-query` (>=5), `react` (>=18), `zustand` (>=5)
+- `firebase` — devDependency only (for `useFirebaseAuth`)
 
 ## Build Output
 
-- `dist/index.js` — ESM module
-- `dist/index.d.ts` — Type declarations
+ESM-only: `dist/index.js` (module) + `dist/index.d.ts` (types). `package.json` `files` ships `dist/**/*`.
 
 ## Git Workflow
 
